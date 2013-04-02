@@ -2,7 +2,7 @@
 
 """
 Tungsten (1944) United Kingdom - carrier-borne air attack on Tirpitz
-JZ, after Roger Deane, after Jonathan Zwart, after Roger Deane
+Jonathan Zwart, after Roger Deane, after JZ, after RD
 2 April 2013
 """
 
