@@ -9,7 +9,6 @@ Jonathan Zwart, after Roger Deane, after JZ, after RD
 import os,sys
 import subprocess
 
-
 user = os.getenv('USER')
 sty = os.getenv('STY')
 
