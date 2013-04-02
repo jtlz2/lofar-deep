@@ -240,16 +240,15 @@ if __name__ == '__main__':
 
 
     assert(sty is not None), 'Run %s inside screen!' % sys.argv[0]
-
     assert(sys.argv[1] is not None), 'input initparms.py file'
+
     SBs=list(flatten(eval(subbands)))
     if convertsb:
         lofar2beams,cal2field,field2cal,cal2lofar,field2lofar=\
         fetchChannelMapping(verbose=False)
-        print  SBs
+        print SBs
 	print cal2field
 	#SBs=[cal2field[sb] for sb in SBs]
-          
 
 #-------------------------------------------------------------------
 
@@ -271,7 +270,20 @@ if __name__ == '__main__':
     if 'x' in ops:
         import lofar.bdsm as bdsm
 
-    for sb in SBs:
+#-------------------------------------------------------------------
+
+# Set up MPI
+    from mpi4py import MPI
+    world=MPI.COMM_WORLD
+    rank=world.rank
+    size=world.size
+    print 'MPI parameters are rank,size = (%i,%i)' % (rank,size)
+    my_SBs=SBs[rank::size]
+
+#-------------------------------------------------------------------
+
+    for sb in my_SBs:
+        print "Processor %d handling SB %03i" % (rank,sb)
         sbh=fetchHistory(logfile,sb)
         # Fetch tar file
         objectf=os.path.join(rawdir,\
