@@ -2,8 +2,8 @@
 
 """
 Tungsten (1944) United Kingdom - carrier-borne air attack on Tirpitz
-Roger Deane, after Jonathan Zwart, after Roger Deane
-19 March 2013
+JZ, after Roger Deane, after Jonathan Zwart, after Roger Deane
+2 April 2013
 """
 
 import os,sys
@@ -17,13 +17,13 @@ BASH='/bin/bash'
 
 OK={0:'success',1:'fail',134:'WTF',-1:'minus'}
 
-opslist=['t','u','b','v','g','s','d','c','i','f']
+opslist=['t','u','b','v','g','s','d','c','i','f','x']
 opsdict={'t':'transfer','u':'unpack','b':'bbs','d':'backup',\
             'c':'clip','i':'image','f':'fits','w':'wrap',\
-            's':'bbst','v':'vds','g':'gds'}
+            's':'bbst','v':'vds','g':'gds','x':'bdsm'}
 opsmap={'transfer':'t','unpack':'u','bbs':'b','backup':'d',\
             'clip':'c','image':'i','fits':'f','wrap':'w',\
-           'bbst':'s','vds':'v','gds':'g'}
+           'bbst':'s','vds':'v','gds':'g','bdsm':'x'}
 
 
 print '#%s' % ''.join(['-' for i in range(79)])
@@ -116,6 +116,24 @@ def fetchHistory(logf,SB):
 #-------------------------------------------------------------------
 
 def updateHistory(logfHandle,subBand,process,operation):
+   """                                                                          
+   """
+   success=-1
+   if process is not None:
+       print '(pid %i)' % process.pid
+       process.wait()
+       success=process.poll(); pid=process.pid
+   else:
+       # This is a fake pass-through for when no process is actually called     
+       pid=0
+       success=0
+   line = 'SB%03i %i %s %i %s' \
+       % (subBand,pid,opsdict[operation],success,OK[success])
+   logfHandle.write('%s\n'%line); logfHandle.flush()
+
+#-------------------------------------------------------------------   
+
+def updateHistoryOld(logfHandle,subBand,process,operation):
    """
    """
    success=-1
@@ -245,6 +263,10 @@ def main():
            = fetchChannelMapping(verbose=False)
        SBs=[cal2field[sb] for sb in SBs]
        #ops=[op for op in list(operations) if op is not ' ' and op is not ',']
+
+    # This import is slow - only do it once (move this to above)        
+    if 'x' in ops:
+        import lofar.bdsm as bdsm
 
     for sb in SBs:
         sbh=fetchHistory(logfile,sb)
@@ -474,6 +496,65 @@ def main():
             proc = subprocess.Popen(img2fitscmd,shell=True,executable=BASH,\
                                        stdout=subprocess.PIPE)
             updateHistory(log,sb,proc,'f')
+
+        # Run PyBDSM and output maps,stats etc.                                 
+        # This could be run directly on the MS.restored.corr in fact            
+        if 'x' in ops and 'f' in sbh:
+            if not os.path.exists('%s.restored.corr.fits'%imgout):
+                print '%s.restored.corr.fits is missing!'%imgout
+                continue
+            do_rms_map=True
+            kappa_clip=3.0
+            print 'Launching PyBDSM...'
+            ncores=None # i.e. auto
+            clobber=True
+            psf_vary_do=False
+            img=bdsm.process_image('%s.restored.corr.fits'%imgout,\
+                rms_map=do_rms_map,kappa_clip=kappa_clip,\
+                psf_vary_do=psf_vary_do,ncores=ncores)
+
+            img_format='fits'
+            img.export_image(img_type='rms',img_format=img_format,clobber=clobber)
+            img.export_image(img_type='ch0',img_format=img_format,clobber=clobber)
+            try:
+                img.export_image(img_type='psf_pa',img_format=img_format,clobber=clobber)
+            except AttributeError:
+                print 'Could not write psf_pa image for some reason..'
+
+            catalog_type='srl'
+            img.write_catalog(format='ascii',clobber=clobber,catalog_type=catalog_type)
+            img.write_catalog(format='fits',clobber=clobber,catalog_type=catalog_type)
+
+            catalog_type='gaul'
+            img.write_catalog(format='ascii',clobber=clobber,catalog_type=catalog_type)
+            img.write_catalog(format='fits',clobber=clobber,catalog_type=catalog_type)
+            img.write_catalog(format='bbs',clobber=clobber,catalog_type=catalog_type)
+
+            if ncores is None: ncores=8 
+            lines = \
+                ['==== Stats for PyBDSM run ===========================\n',
+                 'File %s' % img.filename,
+                 'Frequency / MHz      = %f' % (img.frequency/1.0e6),
+                 'Mask present           %s' % str(img.masked),
+                 'rms_map                %s' % str(do_rms_map),
+                 'psf_vary               %s' % str(psf_vary_do),
+                 'ncores                 %i' % ncores,
+                 'Raw mean / mJy       = %f' % (1.0e3*img.raw_mean),
+                 'Raw rms / mJy        = %f' % (1.0e3*img.raw_rms),
+                 'kappa_clip /sigma    = %4.2f' % kappa_clip,
+                 'Clipped mean / mJy   = %f' % (1.0e3*img.clipped_mean),
+                 'Clipped rms / mJy    = %f' % (1.0e3*img.clipped_rms),
+                 'Max value / Jy       = %f' % img.max_value,
+                 '            at (x,y) = %i,%i' % img.maxpix_coord,
+                 'Min value / Jy       = %f' % img.min_value,
+                 '            at (x,y) = %i,%i' % img.minpix_coord,
+                 '=====================================================']
+            for line in lines:
+                print line
+            statsf='%s.stats' % imgout
+            with open(statsf,'w') as stats:
+                stats.writelines(['%s\n'%line for line in lines])
+            updateHistory(log,sb,None,'x')
 
 
         # Check the complete history for the given SBs
