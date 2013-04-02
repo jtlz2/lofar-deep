@@ -2,6 +2,7 @@
 
 operations = 'aifw'    # operations to perform (see dict below)
 Lnum  =  'L93942' # 'specify project number
+global Lnum
 Ldir =   '/data/scratch/deane/xmm-lss/demixedCAL_amponly/' #RPDe_3C53_86781'
 wdir = Ldir # for the moment
 convertsb= False
