@@ -213,27 +213,30 @@ def fetchChannelMapping(verbose=False):
 
 #-------------------------------------------------------------------
 
-def main():
+if __name__ == '__main__':
 
-    if (sys.argv[1] == '-h'):
-        print 'usage: ./tungsten_RPD.py initparms.py \n \
-        see initparms.py to setup reduction parameters \n'
-	sys.exit()
+    if (len(sys.argv) < 2):
+        print 'usage: %s initparmsXXXX.py \n \
+        see initparmsXXXX.py to set up reduction parameters \n' % sys.argv[0]
+	sys.exit(0)
+    else:
+        pass
 
+    ##### import inital parameters/directory names
+    target=sys.argv[1].split('.')[0].split('initparms')[1]
 
-	##### import inital parameters/directory names
-    if (sys.argv[2] == 'CAL'):
-    		from initparmsCAL import *
-    		os.chdir(Ldir)
-    		print 'imported CAL parms'
-    		print 'Lnum',Lnum
-    elif (sys.argv[2] == 'FIELD'):
-    		from initparmsFIELD import *
-    		os.chdir(Ldir)
-    		print 'imported FIELD parms'
-    		print 'Lnum',Lnum
-
-
+    if target == 'CAL':
+        from initparmsCAL import *
+        print Ldir
+        #X = __import__(sys.argv[1])
+        os.chdir(Ldir)
+        print 'imported CAL parms'
+        print 'Lnum',Lnum
+    elif target == 'FIELD':
+        from initparmsFIELD import *
+        os.chdir(Ldir)
+        print 'imported FIELD parms'
+        print 'Lnum',Lnum
 
 
     assert(sty is not None), 'Run %s inside screen!' % sys.argv[0]
@@ -582,13 +585,11 @@ def main():
 
     log.close()
     cmdhistfile.close()
-    return
 
+    #return
 #------------------------------------------------------------------------------
-
-if __name__ == '__main__':
-
-   main()
-   sys.exit(0)
+#if __name__ == '__main__':
+#   main()
+    sys.exit(0)
 
 #------------------------------------------------------------------------------
