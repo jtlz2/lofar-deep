@@ -273,6 +273,7 @@ if __name__ == '__main__':
 #-------------------------------------------------------------------
 
 # Set up MPI
+    # Usage: mpirun -n 8 ./tungsten.py initparmsXXXX.py
     from mpi4py import MPI
     world=MPI.COMM_WORLD
     rank=world.rank
