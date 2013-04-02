@@ -214,6 +214,7 @@ def fetchChannelMapping(verbose=False):
 
 if __name__ == '__main__':
 
+    # Read command-line arguments
     if (len(sys.argv) < 2):
         print 'usage: %s initparmsXXXX.py \n \
         see initparmsXXXX.py to set up reduction parameters \n' % sys.argv[0]
@@ -230,13 +231,46 @@ if __name__ == '__main__':
     #globals().update(__import__(parms_stem).__dict__)
 
     print Ldir
-    os.chdir(Ldir)
+    #os.chdir(Ldir)
     print 'imported parms from %s' % parms_file
     print 'Lnum',Lnum
 
+#-------------------------------------------------------------------
+
+    # Backup input variables to file two ways:
+    run_id='test' # Temporary hack
+    # Try pickle later:
+    #try: 
+    #    import cPickle as pickle # cPickle is faster
+    #except:
+    #    import pickle
+
+    pars_file_ran = '%s.ran' % run_id
+    p=open(pars_file_ran,'w')
+
+    exclude_types = [type(sys),type(p),type(fetchHistory)]
+    for var in sorted(globals().keys()):
+        if not var.startswith('__'):
+            value=globals()[var]
+            if type(value) not in exclude_types:
+                line = '%s %s' % (str(var),str(value))
+                #print line
+                p.write('%s\n'%line)
+    p.close()
+
+    # And copy the original parm file for good luck...
+    q='%s_%s' % (run_id,parms_file)
+
+    cpcmd = 'cp %s %s' % (parms_file,q)
+    proc = subprocess.Popen(cpcmd,shell=True,executable=BASH)
+
+#-------------------------------------------------------------------
+
+    # Force some basic checks
     assert(sty is not None), 'Run %s inside screen!' % sys.argv[0]
     assert(sys.argv[1] is not None), 'input initparms.py file'
 
+    # Convert the SBs if required
     SBs=list(flatten(eval(subbands)))
     if convertsb:
         lofar2beams,cal2field,field2cal,cal2lofar,field2lofar=\
