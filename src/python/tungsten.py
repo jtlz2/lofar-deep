@@ -222,21 +222,17 @@ if __name__ == '__main__':
         pass
 
     ##### import inital parameters/directory names
-    target=sys.argv[1].split('.')[0].split('initparms')[1]
+    # See http://stackoverflow.com/questions/15768136/python-bulk-promote-variables-to-parent-scope
+    parms_file=sys.argv[1]
+    #parms_stem=parms_file.split('.')[0]
+    #parms_target=parms_stem.split('initparms')[1]
+    execfile(parms_file)
+    #globals().update(__import__(parms_stem).__dict__)
 
-    if target == 'CAL':
-        from initparmsCAL import *
-        print Ldir
-        #X = __import__(sys.argv[1])
-        os.chdir(Ldir)
-        print 'imported CAL parms'
-        print 'Lnum',Lnum
-    elif target == 'FIELD':
-        from initparmsFIELD import *
-        os.chdir(Ldir)
-        print 'imported FIELD parms'
-        print 'Lnum',Lnum
-
+    print Ldir
+    os.chdir(Ldir)
+    print 'imported parms from %s' % parms_file
+    print 'Lnum',Lnum
 
     assert(sty is not None), 'Run %s inside screen!' % sys.argv[0]
     assert(sys.argv[1] is not None), 'input initparms.py file'
